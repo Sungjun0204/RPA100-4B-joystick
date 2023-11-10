@@ -37,9 +37,10 @@
 ## to the 'chatter' topic
 
 import rospy
+import packets
 from std_msgs.msg import String
 from sensor_msgs.msg import Joy
-from std_msgs.msg import Int16
+from std_msgs.msg import Float64MultiArray
 import sys
 import signal
 
@@ -48,7 +49,9 @@ def callback(data):
     rospy.loginfo(rospy.get_caller_id() + 'I heard %s', data.data)
 '''
 
-switch_btn = 0
+#### global variables ####
+servo_on = 0
+servo_off = 0
 
 
 def signal_handler(signal, frame): # ctrl + c -> exit program
@@ -57,11 +60,11 @@ def signal_handler(signal, frame): # ctrl + c -> exit program
 signal.signal(signal.SIGINT, signal_handler)
     
 
-def joycallback(joy_data):
-    global switch_btn
-    # print(joy_data)
-    switch_btn = joy_data.buttons[6] + joy_data.buttons[7]  
-                    # 6 is back, 7 is start
+def joycallback(data):
+    global servo_on, servo_off
+    servo_on = data.buttons[6]
+    servo_off = data.buttons[7]
+    
     
 
     
@@ -71,16 +74,21 @@ def listener():
 
     rospy.init_node('listener', anonymous=True)
 
+    #### Subscribe section ####
     # rospy.Subscriber('chatter', String, callback)
     rospy.Subscriber('/joy', Joy, joycallback)
 
 
-    #### publish section ####
-    pub = rospy.Publisher('packet', Int16, queue_size=10)
+    #### Publish section ####
+    pub = rospy.Publisher('packet', String, queue_size=10)
     rate = rospy.Rate(100) # 10hz
     while not rospy.is_shutdown():
-        rospy.loginfo(switch_btn)
-        pub.publish(switch_btn)
+        if servo_on == 1:
+            pub.publish(packets.SVON)
+            rospy.loginfo(packets.SVON)
+        if servo_off == 1:
+             pub.publish(packets.SVOFF)
+             rospy.loginfo(packets.SVOFF)     
         rate.sleep()
 
 

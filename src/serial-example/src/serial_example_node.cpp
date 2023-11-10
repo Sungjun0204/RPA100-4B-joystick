@@ -21,10 +21,11 @@
 #include <std_msgs/String.h>
 #include <std_msgs/Int16.h>
 #include <std_msgs/Empty.h>
+#include <string>
 
 
 //  global variables
-int switch_num = 0;
+std::string packet_data;
 
 
 serial::Serial ser;
@@ -34,8 +35,8 @@ void write_callback(const std_msgs::String::ConstPtr& msg){
     ser.write(msg->data);
 }
 
-void switch_callback(const std_msgs::Int16::ConstPtr& msg) {
-    switch_num = msg->data;
+void switch_callback(const std_msgs::String::ConstPtr& msg) {
+    packet_data = msg->data;
 }
 
 
@@ -100,18 +101,16 @@ int main (int argc, char** argv){
         packet_off[7] = 0xF9;   // LGT
         packet_off[8] = acm_check;
 
-        if (switch_num == 1) ser.write(packet_off); 
-        else if (switch_num == 2) ser.write(packet_on);
-        else ser.write("");
+        //if (switch_num == 1) ser.write(packet_off); 
+        //else if (switch_num == 2) ser.write(packet_on);
+        //else ser.write("");
+        ser.write(packet_data);
 
         if(ser.available()){
             ROS_INFO_STREAM("Reading from serial port");
             std_msgs::String result;
             result.data = ser.read(ser.available());
             ROS_INFO_STREAM("Read: " << result.data);
-            
-            //for(int i=0; i < sizeof(result.data); i++)
-                //printf("%#x\n", result.data[i]);
             
             read_pub.publish(result);
         }
