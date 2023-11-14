@@ -40,7 +40,6 @@ import rospy
 import packets
 from std_msgs.msg import String
 from sensor_msgs.msg import Joy
-from std_msgs.msg import Float64MultiArray
 import sys
 import signal
 
@@ -62,8 +61,8 @@ signal.signal(signal.SIGINT, signal_handler)
 
 def joycallback(data):
     global servo_on, servo_off
-    servo_on = data.buttons[6]
-    servo_off = data.buttons[7]
+    servo_off = data.buttons[6]
+    servo_on = data.buttons[7]
     
     
 
@@ -84,11 +83,13 @@ def listener():
     rate = rospy.Rate(100) # 10hz
     while not rospy.is_shutdown():
         if servo_on == 1:
+            #for i in range(len(packets.SVON)):
             pub.publish(packets.SVON)
             rospy.loginfo(packets.SVON)
         if servo_off == 1:
-             pub.publish(packets.SVOFF)
-             rospy.loginfo(packets.SVOFF)     
+            #for i in range(len(packets.SVOFF)):
+            pub.publish(packets.SVOFF)
+            rospy.loginfo(packets.SVOFF)     
         rate.sleep()
 
 

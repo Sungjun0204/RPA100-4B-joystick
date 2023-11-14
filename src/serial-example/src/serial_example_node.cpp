@@ -27,7 +27,6 @@
 //  global variables
 std::string packet_data;
 
-
 serial::Serial ser;
 
 void write_callback(const std_msgs::String::ConstPtr& msg){
@@ -76,35 +75,11 @@ int main (int argc, char** argv){
 
         ros::spinOnce();
 
-        int packet_size;
-        char packet_on[9] = {0,};
-        char packet_off[9] = {0,};
-        char acm_check = 0x06;
-
-        packet_on[0] = 0x02;   // -STX-
-        packet_on[1] = 0xFF;   // -Dummy-
-        packet_on[2] = 0x44;   // D
-        packet_on[3] = 0x42;   // B
-        packet_on[4] = 0x30;
-        packet_on[5] = 0x31;
-        packet_on[6] = 0x03;   // -EXT-
-        packet_on[7] = 0xF8;   // LGT
-        packet_on[8] = acm_check;
-
-        packet_off[0] = 0x02;   // -STX-
-        packet_off[1] = 0xFF;   // -Dummy-
-        packet_off[2] = 0x44;   // D
-        packet_off[3] = 0x42;   // B
-        packet_off[4] = 0x30;
-        packet_off[5] = 0x30;
-        packet_off[6] = 0x03;   // -EXT-
-        packet_off[7] = 0xF9;   // LGT
-        packet_off[8] = acm_check;
-
         //if (switch_num == 1) ser.write(packet_off); 
         //else if (switch_num == 2) ser.write(packet_on);
         //else ser.write("");
         ser.write(packet_data);
+        packet_data = {0,};         // reset packet
 
         if(ser.available()){
             ROS_INFO_STREAM("Reading from serial port");
