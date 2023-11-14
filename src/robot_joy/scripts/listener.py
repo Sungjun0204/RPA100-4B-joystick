@@ -51,6 +51,11 @@ def callback(data):
 #### global variables ####
 servo_on = 0
 servo_off = 0
+joystic_xyzw = [0.0, 0.0, 0.0, 0.0]
+speed_btn = [0, 0]
+speed_num = 0
+
+
 
 
 def signal_handler(signal, frame): # ctrl + c -> exit program
@@ -60,16 +65,38 @@ signal.signal(signal.SIGINT, signal_handler)
     
 
 def joycallback(data):
-    global servo_on, servo_off
+    global servo_on, servo_off, joystic_xyzw
     servo_off = data.buttons[6]
     servo_on = data.buttons[7]
+    joystic_xyzw[0] = data.axes[0]  # x
+    joystic_xyzw[1] = data.axes[1]  # y
+    joystic_xyzw[2] = data.axes[4]  # z
+    joystic_xyzw[3] = data.axes[3]  # w
+    speed_btn[0] = data.buttons[4]  # speed +
+    speed_btn[1] = data.buttons[5]  # speed -
+
     
+def speed_func(dn):
+    global speed_num
+
+    speed_num += dn
+    if speed_num >= 50000:
+        speed_num -= dn
+    elif speed_num <= 0:
+        speed_num -= dn
+
+    arr = []
+    for i in str(speed_num):
+        arr.append(i)
+
+    for i in range(5):
+         packets.SPEED[i+4] = '0'   # speed value reset
     
+    for i in range(len(arr)):       # new speed value input
+         packets.SPEED[8-i] = arr[len(arr)-1-i]         
 
     
 def listener():
-
-    global switch_btn
 
     rospy.init_node('listener', anonymous=True)
 
@@ -83,14 +110,43 @@ def listener():
     rate = rospy.Rate(100) # 10hz
     while not rospy.is_shutdown():
         if servo_on == 1:
-            #for i in range(len(packets.SVON)):
-            pub.publish(packets.SVON)
-            rospy.loginfo(packets.SVON)
+            pub.publish(packets.SVON); #rospy.loginfo(packets.SVON)
         if servo_off == 1:
-            #for i in range(len(packets.SVOFF)):
-            pub.publish(packets.SVOFF)
-            rospy.loginfo(packets.SVOFF)     
+            pub.publish(packets.SVOFF); #rospy.loginfo(packets.SVOFF)
+        
+        # X moving
+        if (joystic_xyzw[0] <= -0.8 and joystic_xyzw[0] >= -1.0):
+             pub.publish(packets.MUVX[1]); #rospy.loginfo(packets.MUVX[0])
+        if (joystic_xyzw[0] >= 0.8 and joystic_xyzw[0] <= 1.0):
+             pub.publish(packets.MUVX[0]); #rospy.loginfo(packets.MUVX[1])
+
+        # Y moving
+        if (joystic_xyzw[1] <= -0.8 and joystic_xyzw[1] >= -1.0):
+             pub.publish(packets.MUVY[0]); #rospy.loginfo(packets.MUVY[1])
+        if (joystic_xyzw[1] >= 0.8 and joystic_xyzw[1] <= 1.0):
+             pub.publish(packets.MUVY[1]); #rospy.loginfo(packets.MUVY[0])
+
+        # Z moving
+        if (joystic_xyzw[2] <= -0.8 and joystic_xyzw[2] >= -1.0):
+             pub.publish(packets.MUVZ[0]); #rospy.loginfo(packets.MUVZ[0])
+        if (joystic_xyzw[2] >= 0.8 and joystic_xyzw[2] <= 1.0):
+             pub.publish(packets.MUVZ[1]); #rospy.loginfo(packets.MUVZ[1])
+
+        # W moving
+        if (joystic_xyzw[3] <= -0.8 and joystic_xyzw[3] >= -1.0):
+             pub.publish(packets.MUVW[0]); #rospy.loginfo(packets.MUVW[0])
+        if (joystic_xyzw[3] >= 0.8 and joystic_xyzw[3] <= 1.0):
+             pub.publish(packets.MUVW[1]); #rospy.loginfo(packets.MUVW[1])   
         rate.sleep()
+
+        # Speed value Change
+        if speed_btn[0] == 1: 
+            speed_func(100); pub.publish(''.join(packets.SPEED)); rospy.loginfo(''.join(packets.SPEED))
+        if speed_btn[1] == 1: 
+            speed_func(-100); pub.publish(''.join(packets.SPEED)); rospy.loginfo(''.join(packets.SPEED))
+             
+             
+
 
 
     # spin() simply keeps python from exiting until this node is stopped
