@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Servo On Packet
 # import numpy as np
 
@@ -179,5 +180,18 @@ SPEED = [chr(STX),
          chr(0x30),   # 10
          chr(0x30),   # 1
          chr(EXT),
-         chr(0xCF),
+         chr(0xCF),   # LRC
+         chr(ACM)]
+
+
+
+## Servo Motor Present Coordi.(in XYZ axis)
+COORDI = [chr(STX),
+         chr(DUMMY),
+         chr(0x41),   # A
+         chr(0x43),   # C
+         chr(0x30),   # ch.1
+         chr(0x32),   # 0: Encorder / 1: Joint / 2: XYZ Standard   => 2 used
+         chr(EXT),    
+         chr(0xFF),   # LRC
          chr(ACM)]

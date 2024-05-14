@@ -24,6 +24,7 @@
 #include <string>
 
 
+
 //  global variables
 std::string packet_data;
 
@@ -46,9 +47,10 @@ int main (int argc, char** argv){
     ros::init(argc, argv, "serial_example_node");
     ros::NodeHandle nh;
 
-    ros::Subscriber write_sub1 = nh.subscribe("write", 1000, write_callback);
-    ros::Subscriber write_sub2 = nh.subscribe("packet", 1000, switch_callback);
+    ros::Subscriber write_sub1 = nh.subscribe("/write", 1000, write_callback);
+    ros::Subscriber write_sub2 = nh.subscribe("/packet", 1000, switch_callback);
     ros::Publisher read_pub = nh.advertise<std_msgs::String>("read", 1000);
+
 
     try
     {
@@ -70,16 +72,16 @@ int main (int argc, char** argv){
         return -1;
     }
 
-    ros::Rate loop_rate(5);
+    ros::Rate loop_rate(10);
+
+
     while(ros::ok()){
 
         ros::spinOnce();
 
-        //if (switch_num == 1) ser.write(packet_off); 
-        //else if (switch_num == 2) ser.write(packet_on);
-        //else ser.write("");
         ser.write(packet_data);
-        packet_data = {0,};         // reset packet
+        packet_data.clear(); // 패킷 리셋
+        
 
         if(ser.available()){
             ROS_INFO_STREAM("Reading from serial port");
