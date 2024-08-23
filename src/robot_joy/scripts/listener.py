@@ -19,7 +19,7 @@ def callback(data):
 #### global variables ####
 servo_on = 0
 servo_off = 0
-whereareyou = 0
+whereareyou = 1
 joystic_xyzw = [0.0, 0.0, 0.0, 0.0]
 speed_btn = [0, 0]
 speed_num = 0
@@ -38,7 +38,7 @@ def joycallback(data):
     global servo_on, servo_off, whereareyou, joystic_xyzw
     servo_off = data.buttons[8]
     servo_on = data.buttons[9]
-    whereareyou = data.buttons[0]  # Y버튼 (현재 좌표 확인)
+    # whereareyou = data.buttons[0]  # Y버튼 (현재 좌표 확인)
     joystic_xyzw[0] = data.axes[0]  # x
     joystic_xyzw[1] = data.axes[1]  # y
     joystic_xyzw[2] = data.axes[4]  # z

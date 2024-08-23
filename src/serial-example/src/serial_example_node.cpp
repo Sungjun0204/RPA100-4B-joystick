@@ -49,12 +49,12 @@ int main (int argc, char** argv){
 
     ros::Subscriber write_sub1 = nh.subscribe("/write", 1000, write_callback);
     ros::Subscriber write_sub2 = nh.subscribe("/packet", 1000, switch_callback);
-    ros::Publisher read_pub = nh.advertise<std_msgs::String>("read", 1000);
+    ros::Publisher read_pub = nh.advertise<std_msgs::String>("read_scara", 1000);
 
 
     try
     {
-        ser.setPort("/dev/ttyUSB0");
+        ser.setPort("/dev/ttyUSB1");
         ser.setBaudrate(115200);
         serial::Timeout to = serial::Timeout::simpleTimeout(1000);
         ser.setTimeout(to);
