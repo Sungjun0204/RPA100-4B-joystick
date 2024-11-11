@@ -47,6 +47,11 @@ SVOFF = ''.join([chr(STX),
 
 
 
+
+
+
+
+
 ###########################
 ## XYZ Coordinate Moving ##
 ########################### 
@@ -195,3 +200,28 @@ COORDI = [chr(STX),
          chr(EXT),    
          chr(0xFF),   # LRC
          chr(ACM)]
+
+JOINT  = [chr(STX),
+          chr(DUMMY),
+          chr(0x41),   # A
+          chr(0x43),   # C
+          chr(0x30),   # ch.1
+          chr(0x31),   # 0: Encorder / 1: Joint / 2: XYZ Standard => 1 used
+          chr(EXT),    
+          chr(0xFC),   # LRC
+          chr(ACM)]
+
+
+START_POS = [chr(val) for val in [
+               STX, DUMMY, 
+               0x42, 0x43,       # BC
+               0x30,             # ch.1
+               0x30,             # 모션 Type: Joint 기준 이동
+               0x30,             # 좌표계 단위: 도(Deg)
+               0x20, 0x20, 0x20, 0x20, 0x2D, 0x33, 0x2E, 0x39, 0x37, 0x33,  # Axis 1 command
+               0x20, 0x20, 0x20, 0x20, 0x32, 0x35, 0x2E, 0x35, 0x34, 0x33,  # Axis 2 command
+               0x20, 0x20, 0x20, 0x20, 0x36, 0x31, 0x2E, 0x37, 0x37, 0x37,  # Axis 3 command
+               0x20, 0x20, 0x20, 0x20, 0x35, 0x30, 0x2E, 0x30, 0x39, 0x34,  # Axis 4 command
+               EXT, 
+               0xD0              # LRC
+               ]]
