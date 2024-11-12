@@ -10,6 +10,7 @@ from std_msgs.msg import String, Float32MultiArray
 from sensor_msgs.msg import Joy
 import sys
 import signal
+import numpy as np
 
 '''
 def callback(data):
@@ -30,6 +31,15 @@ order_angle = [0,0,0,0]
 NEXT_POS = []
 
 
+# 변환행렬 상수
+T_mtx = np.array([[1,  0,  0, 920],
+                  [0,  1,  0,  90],
+                  [0,   0,  1, 540],
+                  [0,   0,  0,   1]])
+
+
+
+
 ## node 비정상 작동 시 강제 종료를 위한 함수 ##
 def signal_handler(signal, frame): # ctrl + c -> exit program
         print('You pressed Ctrl+C!')
@@ -42,21 +52,27 @@ def joycallback(data):
     global servo_on, servo_off, whereareyou, joystic_xyzw, start_pos_btn
     servo_off = data.buttons[8]
     servo_on = data.buttons[9]
-    start_pos_btn = data.buttons[2] # A버튼 (실험 시작 위치로 이동)
+    # speed_slow_btn = data.buttons[1] # B버튼 (속도 현저히 낮추는 버튼)
+    start_pos_btn = data.buttons[2]  # A버튼 (실험 시작 위치로 이동)
     # whereareyou = data.buttons[0]  # Y버튼 (현재 좌표 확인)
     joystic_xyzw[0] = data.axes[0]  # x
     joystic_xyzw[1] = data.axes[1]  # y
     joystic_xyzw[2] = data.axes[4]  # z
     joystic_xyzw[3] = data.axes[3]  # w
     speed_btn[0] = data.buttons[4]  # speed +
-    speed_btn[1] = data.buttons[5]  # speed -
+    speed_btn[1] = data.buttons[1]  # speed -
 
 
 def controlcallback(data):
-    global order_angle, NEXT_POS
+    global order_angle, NEXT_POS, T_mtx
+
+    # 토크 값을 SCARA 좌표에 맞게 변환
+    rotation_mtx = T_mtx[:3, :3]   # 회전 행렬 부분만 추출
+    workspace_torque = np.array([data.data[0], data.data[1], 0])
+    scara_torque = np.dot(rotation_mtx, workspace_torque)
 
     # 각도 값 할당
-    order_angle[:2] = data.data[:2]
+    order_angle[:2] = scara_torque[:2]
     order_angle[2] = 61.777
     order_angle[3] = data.data[2]
 
@@ -166,7 +182,7 @@ def listener():
     pub = rospy.Publisher('packet', String, queue_size=10)     # end effect의 좌표 요청 전용 publisher handle
     pub2 = rospy.Publisher('packet2', String, queue_size=10)   # 각 관절의 현재 각도 요청 전용 publisher handle
     pub3 = rospy.Publisher('packet3', String, queue_size=10)   # 움직임에 대한 지령 전용 publisher handle
-    rate = rospy.Rate(100) # 10hz
+    rate = rospy.Rate(10) # 10hz
 
 
     #### 알고리즘 파트 ####
@@ -216,7 +232,8 @@ def listener():
         if speed_btn[0] == 1: 
             speed_func(100); pub3.publish(''.join(packets.SPEED)); rospy.loginfo(''.join(packets.SPEED))
         if speed_btn[1] == 1: 
-            speed_func(-100); pub3.publish(''.join(packets.SPEED)); rospy.loginfo(''.join(packets.SPEED))
+            pub3.publish(''.join(packets.SPEED))
+            # speed_func(-1000); pub3.publish(''.join(packets.SPEED)); rospy.loginfo(''.join(packets.SPEED))
 
 
         rate.sleep()

@@ -67,7 +67,7 @@ def convert_to_float(str_value):
 def xyz_callback(data):
     global T_mtx, final_scara, RAD2DEG, final_coordi, final_joint
 
-    # print(data.data)
+    print(data.data)
 
     if(len(data.data) == 47):
         
@@ -131,7 +131,7 @@ def xyz_callback(data):
         final_scara[:3] = final_coordi     # end effect의 XYZ 좌표 값 저장
         final_scara[3:7]= final_joint      # 각 관절의 현재 각도 값 저장
         np.set_printoptions(precision=3)   # 각 위치 값을 소수점 아래 세 자리까지만 출력 설정
-        print(np.array(final_scara))
+        # print(np.array(final_scara))
 
     # else:
         # print("...adjusting....")
@@ -160,7 +160,7 @@ def reading():
     rospy.Subscriber('/read_scara', String, xyz_callback)       # SCARA 패킷 값 구독
     
     
-    rate = rospy.Rate(100) # 100hz
+    rate = rospy.Rate(10) # 100hz
     coordi_value = Float32MultiArray()
 
     #### 알고리즘 파트 ####

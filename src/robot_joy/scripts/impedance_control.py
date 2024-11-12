@@ -21,25 +21,32 @@ m_device = 18  # 장치의 질량 [kg]
 I_device_cm = (1 / 12) * m_device * (0.2 ** 2 + 0.3 ** 2)  # [kg*m^2] 물체의 COM기준 관성 모멘트
 
 # SCARA 로봇의 원점 설정
-scara_origin = np.array([0.920, 90.0])  # SCARA 로봇의 베이스 위치 [m]
+# scara_origin = np.array([0.920, 0.090])  # SCARA 로봇의 베이스 위치 [m]
+scara_origin = np.array([0., 0.])  # SCARA 로봇의 베이스 위치 [m]
 
 dt = 0.005  # 시간 간격 [s]
-Kp = np.diag([10, 10])  # PD 제어기의 비례 게인
-Kd = np.diag([30, 30])  # PD 제어기의 미분 게인
+Kp = np.diag([100, 100])  # PD 제어기의 비례 게인
+Kd = np.diag([20, 20])  # PD 제어기의 미분 게인
 M_d = np.diag([1, 1])  # 가상의 질량 행렬
 D_d = np.diag([50, 50])  # 댐핑 행렬
-K_d = np.diag([50, 50])  # 강성 행렬
-distance_threshold = 0.3  # 로봇 팔과 점 사이의 최대 거리 [m]
+K_d = np.diag([150, 150])  # 강성 행렬
+distance_threshold = 0.05  # 로봇 팔과 점 사이의 최대 거리 [m]
 
 # 초기 설정
 q = np.array([-3.975, 25.543]) * DEG2RAD  # 초기 관절 각도 [rad]
 qd = np.array([0.0, 0.0])  # 초기 관절 각속도 [rad/s]
-end_point = np.array([1.3, -1.3])  # 목표 지점 [m]
+end_point = np.array([0.1, 0.1])  # 목표 지점 [m]
 
 # 퍼블리셔와 서브스크라이버 콜백 함수 설정
 pub = None
 w_axis_angle = 0.0  # 초기 W축 각도 설정
 initial_direction = None  # 초기 방향 설정
+calculation_done = False  # 계산이 완료되었는지 여부를 저장하는 플래그
+
+
+
+
+
 
 # /scara_coordi 메세지 구독 콜백 함수
 def scara_coordi_callback(data):
@@ -55,11 +62,11 @@ def scara_coordi_callback(data):
 
 
 def magnet_callback(data):
-    global q, qd, scara_end_effector_pos, w_axis_angle, initial_direction
+    global q, qd, scara_end_effector_pos, w_axis_angle, initial_direction, calculation_done
     
     # 구독된 자석 위치
     p = np.array(data.data[:2])  # 자석의 위치 [m] (XY 좌표만 사용)
-    
+
     # 현재 엔드 이펙터 위치 사용 (구독된 데이터 사용)
     x = scara_end_effector_pos
 
@@ -81,7 +88,7 @@ def magnet_callback(data):
     if distance > distance_threshold:
         x_target = p
     else:
-        x_target = end_point + scara_origin[:2]
+        x_target = end_point #+ scara_origin[:2]
 
     # 목표 위치 방향 및 계산
     direction_to_target = x_target - x
@@ -123,12 +130,39 @@ def magnet_callback(data):
     qd += qdd * dt
     q += qd * dt
 
+    # 계산 완료 후 플래그 설정
+    calculation_done = True
+
+
     # 관절 각도를 발행 (q1, q2, w 축 각도 포함)
-    msg = Float32MultiArray()
-    q = q * RAD2DEG
-    w_desired = w_desired * RAD2DEG
-    msg.data = q.tolist() + [w_desired]
-    pub.publish(msg)
+    publish_joint_angles(q, w_desired)
+
+    # 다음 이동 좌표를 발행
+    # msg = Float32MultiArray()
+    # msg.data = (forward_kinematics(q, L1, L2)*1000).tolist() + [1]
+    # pub.publish(msg)
+
+    # # 관절 각도를 발행 (q1, q2, w 축 각도 포함)
+    # msg = Float32MultiArray()
+    # q_deg = q * RAD2DEG
+    # w_desired_deg = w_desired * RAD2DEG
+    # msg.data = q_deg.tolist() + [w_desired_deg]
+    # pub.publish(msg)
+
+
+def publish_joint_angles(q, w_desired):
+    global pub, calculation_done
+
+    # 계산 완료된 경우에만 발행
+    if calculation_done:
+        msg = Float32MultiArray()
+        q = q * RAD2DEG
+        w_desired = w_desired * RAD2DEG
+        msg.data = q.tolist() + [w_desired]
+        pub.publish(msg)
+        calculation_done = False  # 발행 후 플래그 초기화
+
+
 
 
 # 순방향 운동학 함수
@@ -165,7 +199,7 @@ def jacobian(q, L1, L2):
 def dynamics_matrices(q, qd, m1, m2, L1, L2, I1, I2, m_device, I_device_cm):
     theta1, theta2 = q
     theta1_dot, theta2_dot = qd
-
+    
     # 기존 질량 행렬 계산
     M11 = I1 + I2 + (m1 * (L1 ** 2)) / 4 + m2 * (L1 ** 2 + (L2 ** 2) / 4 + L1 * L2 * np.cos(theta2))
     M12 = I2 + m2 * ((L2 ** 2) / 4 + (L1 * L2 * np.cos(theta2)) / 2)
@@ -203,19 +237,21 @@ def impedance_control():
     rospy.Subscriber('magnet_pos', Float32MultiArray, magnet_callback)
     rospy.Subscriber('scara_coordi', Float32MultiArray, scara_coordi_callback)
     
-    rate = rospy.Rate(100) # 100hz
+    rate = rospy.Rate(1) # 100hz
     scara_end_effector_pos = np.zeros(2)  # 초기값 설정 (XY 좌표만 사용)
 
     #### 알고리즘 파트 ####
     while not rospy.is_shutdown():
+        # 계산이 완료된 경우에만 발행이 이루어지도록 함
+        publish_joint_angles(q, w_axis_angle)
+
         rate.sleep()
              
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
 
+
+
 if __name__ == '__main__':
-    try:
-        impedance_control()
-    except rospy.ROSInterruptException:
-        pass
+    impedance_control()

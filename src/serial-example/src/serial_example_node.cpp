@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(10);
 
     while (ros::ok()) {
         ros::spinOnce();
@@ -113,7 +113,7 @@ int main(int argc, char** argv) {
                     std_msgs::String result;
                     result.data = "3" + ser.read(ser.available());
                     ROS_INFO_STREAM("Read: " << result.data);
-                    // read_pub.publish(result);
+                    read_pub.publish(result);
                     break;
                 }
                 ros::spinOnce();
