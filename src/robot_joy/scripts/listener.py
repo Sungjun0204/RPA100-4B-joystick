@@ -32,8 +32,8 @@ NEXT_POS = []
 
 
 # 변환행렬 상수
-T_mtx = np.array([[1,  0,  0, 920],
-                  [0,  1,  0,  90],
+T_mtx = np.array([[-1,  0,  0, 920],
+                  [0,  -1,  0,  90],
                   [0,   0,  1, 540],
                   [0,   0,  0,   1]])
 
@@ -68,13 +68,14 @@ def controlcallback(data):
 
     # 토크 값을 SCARA 좌표에 맞게 변환
     rotation_mtx = T_mtx[:3, :3]   # 회전 행렬 부분만 추출
-    workspace_torque = np.array([data.data[0], data.data[1], 0])
-    scara_torque = np.dot(rotation_mtx, workspace_torque)
+    workspace_torque = np.array([data.data[0], data.data[1], 0, 1])
+    scara_torque = np.dot(T_mtx, workspace_torque)
 
     # 각도 값 할당
     order_angle[:2] = scara_torque[:2]
     order_angle[2] = 61.777
-    order_angle[3] = data.data[2]
+    # order_angle[3] = data.data[2]
+    order_angle[3] = 71.663
 
     # STX, DUMMY, BC, ch.1, Motion Type, Coordinate unit
     packet = [
@@ -82,8 +83,8 @@ def controlcallback(data):
         0xFF,           # DUMMY
         0x42, 0x43,     # BC
         0x30,           # ch.1
-        0x30,           # Motion Type: Joint-based movement
-        0x30            # Coordinate unit: Degree (Deg)
+        0x31,           # Motion Type: Joint-based(0)  / Linear-based(1)
+        0x31            # Coordinate unit: Degree (Deg) / mm (1)
     ]
 
     # 각도 값을 문자열로 변환하여 패킷에 추가 (10비트로 구성, 남는 자리는 0x20으로 채움)

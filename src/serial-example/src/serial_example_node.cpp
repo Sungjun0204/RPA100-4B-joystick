@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
     }
 
     ros::Rate loop_rate(10);
+    // ros::Rate packet3_rate(1); // 1 Hz rate for packet3
 
     while (ros::ok()) {
         ros::spinOnce();
@@ -102,6 +103,7 @@ int main(int argc, char** argv) {
 
         // Send the third packet and wait for a response
         if (!packet_data3.empty()) {
+            // packet3_rate.sleep(); // Ensure the packet3 is sent only once per second
             ser.write(packet_data3);
             packet_data3.clear(); // Reset packet
 
